@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.formation.book.controller.BookControllerTest
--------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.894 s -- in com.formation.book.controller.BookControllerTest
