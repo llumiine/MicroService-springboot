@@ -1,6 +1,7 @@
 package com.formation.loan.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import java.time.LocalDate;
 
 @Entity

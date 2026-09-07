@@ -10,13 +10,19 @@ import com.formation.loan.exception.NoAvailableCopiesException;
 import com.formation.loan.model.Loan;
 import com.formation.loan.model.LoanStatus;
 import com.formation.loan.repository.LoanRepository;
+import feign.FeignException;
+import feign.Request;
+import feign.RequestTemplate;
+import feign.Response;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,6 +63,7 @@ class LoanServiceTest {
         assertEquals("Alice", response.getMemberName());
         assertEquals("Clean Code", response.getBookTitle());
         assertEquals(LoanStatus.ACTIVE, response.getStatus());
+        assertEquals(response.getLoanDate().plusDays(14), response.getDueDate());
 
         verify(bookClient).decrementStock(1L);
         verify(loanRepository).save(any(Loan.class));
@@ -73,6 +80,26 @@ class LoanServiceTest {
 
         assertThrows(NoAvailableCopiesException.class, () -> loanService.createLoan(request));
         verify(bookClient, never()).decrementStock(anyLong());
+        verify(loanRepository, never()).save(any());
+    }
+
+    /**
+     * Cas de concurrence (TOCTOU) : la vérification faite à l'étape 1 (GET) était
+     * positive, mais un autre emprunt a épuisé le stock avant l'étape 2 (decrement-stock).
+     * book-service revérifie et répond 409 : loan-service doit propager ce conflit.
+     */
+    @Test
+    void createLoan_ConcurrentStockDepletion_PropagatesConflict() {
+        LoanRequest request = new LoanRequest("Alice", 1L);
+        BookDto book = new BookDto();
+        book.setId(1L);
+        book.setTitle("Clean Code");
+        book.setAvailableCopies(1); // disponible au moment du GET
+
+        when(bookClient.getBookById(1L)).thenReturn(book);
+        when(bookClient.decrementStock(1L)).thenThrow(feignConflict());
+
+        assertThrows(FeignException.Conflict.class, () -> loanService.createLoan(request));
         verify(loanRepository, never()).save(any());
     }
 
@@ -100,5 +127,29 @@ class LoanServiceTest {
 
         assertThrows(LoanAlreadyReturnedException.class, () -> loanService.returnLoan(10L));
         verify(bookClient, never()).incrementStock(anyLong());
+    }
+
+    @Test
+    void getLoanById_NotFound_ThrowsException() {
+        when(loanRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(LoanNotFoundException.class, () -> loanService.getLoanById(99L));
+    }
+
+    private FeignException.Conflict feignConflict() {
+        Request request = Request.create(
+                Request.HttpMethod.PATCH,
+                "/api/books/1/decrement-stock",
+                Collections.emptyMap(),
+                null,
+                StandardCharsets.UTF_8,
+                new RequestTemplate());
+        Response response = Response.builder()
+                .status(409)
+                .reason("Conflict")
+                .request(request)
+                .headers(Collections.emptyMap())
+                .build();
+        return (FeignException.Conflict) FeignException.errorStatus("BookClient#decrementStock(Long)", response);
     }
 }

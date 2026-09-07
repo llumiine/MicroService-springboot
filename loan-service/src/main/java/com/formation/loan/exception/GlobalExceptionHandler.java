@@ -3,11 +3,22 @@ package com.formation.loan.exception;
 import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(f -> f.getField() + " : " + f.getDefaultMessage())
+                .findFirst()
+                .orElse("Requête invalide");
+        ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(), "Bad Request", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
 
     @ExceptionHandler(LoanNotFoundException.class)
     public ResponseEntity<ApiError> handleLoanNotFound(LoanNotFoundException ex) {

@@ -66,6 +66,15 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
+        <!--
+          HttpURLConnection (client Feign par défaut) ne supporte pas la méthode PATCH
+          (java.net.ProtocolException: Invalid HTTP method: PATCH). OkHttp la supporte.
+        -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-okhttp</artifactId>
+        </dependency>
+
         <!-- Load Balancer -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

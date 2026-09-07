@@ -39,4 +39,4 @@ public class LoanResponse {
 
     public LoanStatus getStatus() { return status; }
     public void setStatus(LoanStatus status) { this.status = status; }
-}C
+}

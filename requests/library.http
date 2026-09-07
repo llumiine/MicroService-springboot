@@ -1,0 +1,80 @@
+### Système de gestion de bibliothèque — collection de requêtes
+### Toutes les requêtes passent par l'api-gateway (port 8090), pas directement par les services.
+### Compatible avec l'extension VS Code "REST Client" et le client HTTP d'IntelliJ IDEA.
+
+@gateway = http://localhost:8090
+
+### 1. Créer un livre avec un seul exemplaire (pour pouvoir tester la rupture de stock facilement)
+# @name createBook
+POST {{gateway}}/api/books
+Content-Type: application/json
+
+{
+  "title": "Clean Code",
+  "author": "Robert C. Martin",
+  "isbn": "978-0132350884",
+  "totalCopies": 1
+}
+
+### 2. Lister tous les livres
+GET {{gateway}}/api/books
+
+### 3. Récupérer le livre créé
+GET {{gateway}}/api/books/{{createBook.response.body.$.id}}
+
+### 4. Créer un emprunt réussi (le livre a 1 exemplaire disponible)
+# @name createLoanSuccess
+POST {{gateway}}/api/loans
+Content-Type: application/json
+
+{
+  "memberName": "Alice",
+  "bookId": {{createBook.response.body.$.id}}
+}
+
+### 5. Vérifier que le stock est bien retombé à 0
+GET {{gateway}}/api/books/{{createBook.response.body.$.id}}
+
+### 6. Créer un emprunt refusé : plus aucun exemplaire disponible -> 409 Conflict
+POST {{gateway}}/api/loans
+Content-Type: application/json
+
+{
+  "memberName": "Bob",
+  "bookId": {{createBook.response.body.$.id}}
+}
+
+### 7. Créer un emprunt pour un livre inexistant -> 400 Bad Request
+POST {{gateway}}/api/loans
+Content-Type: application/json
+
+{
+  "memberName": "Charlie",
+  "bookId": 999999
+}
+
+### 8. Rendre l'emprunt d'Alice -> 200, stock réincrémenté
+PATCH {{gateway}}/api/loans/{{createLoanSuccess.response.body.$.id}}/return
+
+### 9. Vérifier que le stock est remonté à 1
+GET {{gateway}}/api/books/{{createBook.response.body.$.id}}
+
+### 10. Tenter de rendre le même emprunt une seconde fois -> 409 Conflict
+PATCH {{gateway}}/api/loans/{{createLoanSuccess.response.body.$.id}}/return
+
+### 11. Lister tous les emprunts
+GET {{gateway}}/api/loans
+
+### 12. Créer un livre invalide (titre manquant) -> 400 Bad Request
+POST {{gateway}}/api/books
+Content-Type: application/json
+
+{
+  "title": "",
+  "author": "Auteur inconnu",
+  "isbn": "000",
+  "totalCopies": 3
+}
+
+### 13. Récupérer un livre inexistant -> 404 Not Found
+GET {{gateway}}/api/books/999999
