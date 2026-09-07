@@ -38,6 +38,9 @@
 
     <modules>
         <module>eureka-server</module>
+        <module>config-server</module>
+        <module>api-gateway</module>
+        <module>book-service</module>
         <module>loan-server</module>
     </modules>
 </project>

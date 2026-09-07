@@ -1,0 +1,13 @@
+com\formation\book\dto\BookRequest.class
+com\formation\book\BookServiceApplication.class
+com\formation\book\exception\GlobalExceptionHandler.class
+com\formation\book\model\Book.class
+com\formation\book\dto\BookResponse.class
+com\formation\book\controller\BookController.class
+com\formation\book\service\BookService.class
+com\formation\book\exception\ApiError.class
+com\formation\book\exception\NoCopyAvailableException.class
+com\formation\book\model\Book$BookBuilder.class
+com\formation\book\repository\BookRepository.class
+com\formation\book\dto\BookResponse$BookResponseBuilder.class
+com\formation\book\exception\BookNotFoundException.class
