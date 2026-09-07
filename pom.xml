@@ -38,5 +38,6 @@
 
     <modules>
         <module>eureka-server</module>
+        <module>loan-server</module>
     </modules>
 </project>
